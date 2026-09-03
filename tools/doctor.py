@@ -1190,6 +1190,61 @@ def check_approval_policy(root: Path = ROOT) -> list[Finding]:
     )]
 
 
+# バックアップを取っていないと注意にする日数(台帳 D-17)
+BACKUP_WARN_DAYS = 30
+
+
+def check_toolpack_backup(root: Path = ROOT) -> list[Finding]:
+    """追加ツール領域を外部媒体へ書き出しているかを見る(台帳 D-17)。
+
+    `additional-tools/` は Git 管理外で `push local` に乗らず、
+    その `push local` の宛先も同じドライブにある。
+    **承認の記録はここにしか無い**ので、取っていないなら知らせる。
+    """
+    store = _toolpack_store(root)
+    if store is None:
+        return []
+    try:
+        sys.path.insert(0, str(root / "tools"))
+        import toolpack_backup
+
+        record = toolpack_backup.last_backup(store)
+    except Exception as error:
+        return [Finding(
+            "情報", "バックアップの記録を読めません", detail=type(error).__name__,
+        )]
+
+    if record is None:
+        # 何も入っていないなら、まだ取る必要は無い
+        try:
+            if not (store.load_registry().get("tools") or {}):
+                return []
+        except Exception:
+            return []
+        return [Finding(
+            "注意", "追加ツール領域のバックアップを取っていません",
+            advice=(
+                "USBメモリ等へ書き出してください: "
+                "python tools/toolpack_backup.py save <保存先>"
+            ),
+            detail="承認の記録はここにしかなく、ディスクが壊れると戻せません",
+        )]
+
+    try:
+        taken = datetime.strptime(str(record["at"]), "%Y-%m-%dT%H:%M:%S")
+    except (ValueError, KeyError):
+        return [Finding("注意", "バックアップの記録が読めません", detail=str(record))]
+    days = (datetime.now() - taken).days
+    where = str(record.get("target") or "")
+    if days >= BACKUP_WARN_DAYS:
+        return [Finding(
+            "注意", f"追加ツール領域のバックアップが {days} 日前です",
+            advice="USBメモリ等へ取り直してください",
+            detail=where,
+        )]
+    return [Finding("OK", f"追加ツール領域のバックアップ: {days} 日前", detail=where)]
+
+
 LOCAL_SERVICE_PORTS = (8010, 8008)
 
 
@@ -1621,6 +1676,7 @@ def collect_findings() -> list[Finding]:
     findings.extend(check_toolpack_runner())
     findings.extend(check_service_exposure())
     findings.extend(check_approval_policy())
+    findings.extend(check_toolpack_backup())
     findings.extend(check_webui_internal_api())
     findings.extend(check_required_files())
     findings.extend(check_language_tools())
