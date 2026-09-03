@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "decision_extract",
+  "version": "1.1.0",
+  "display_name": "決定事項・宿題一覧",
+  "summary": "文字起こしから決定事項と宿題を抜き出し、根拠つきでExcelにまとめる",
+  "inputs": {
+    "accepts": [".txt", ".text", ".md", ".markdown", ".csv", ".tsv", ".log", ".json", ".yaml", ".yml", ".ini", ".rst", ".vtt", ".srt", ".html", ".htm", ".xml", ".docx", ".pptx", ".xlsx", ".xlsm", ".xls"],
+    "min": 1,
+    "max": 1
+  },
+  "outputs": {
+    "produces": [".xlsx"],
+    "may_be_empty": false
+  },
+  "requires": {
+    "core_api": ">=1,<2",
+    "packages": ["openpyxl==3.1.5", "python-docx==1.2.0"],
+    "models": ["gemma4:26b"]
+  },
+  "permissions": {
+    "ollama": true
+  },
+  "timeout_seconds": 900,
+  "routing": {
+    "label": "決定事項・宿題一覧",
+    "patterns": ["決定事項|宿題|持ち帰り|やること|決まったこと|ToDo|todo"],
+    "examples": [
+      "決定事項と宿題をまとめて",
+      "決まったことを一覧にして"
+    ],
+    "suggestions": [
+      {
+        "title": "決定事項・宿題一覧",
+        "subtitle": "根拠つきでExcelにまとめる",
+        "content": "決定事項と宿題をまとめて"
+      }
+    ]
+  },
+  "smoke": {
+    "make_sample": "samples/make_sample.py",
+    "request": "samples/smoke_request.json",
+    "expect": {
+      "status": "ok",
+      "files_min": 1,
+      "suffixes": [".xlsx"]
+    }
+  }
+}

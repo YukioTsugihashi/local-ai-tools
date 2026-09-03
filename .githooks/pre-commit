@@ -1,0 +1,83 @@
+#!/bin/sh
+# コミット前にブリッジのテストを回す。赤いままコミットさせないための柵。
+# 有効化: git config core.hooksPath .githooks (クローン・リセット後は再設定が必要)
+
+root="$(git rev-parse --show-toplevel)"
+bridge="$root/text-processing-bridge"
+python="$bridge/.venv/Scripts/python.exe"
+
+# ステージした内容と作業ツリーが食い違うファイルは止める。
+# このフックのテストは作業ツリーを見るため、そのままコミットすると
+# 「テストしていない内容」が入る(2026-08-18に git update-index による
+# 部分ステージで実際に起きた)。
+partial=$(
+    { git -C "$root" diff --cached --name-only; git -C "$root" diff --name-only; }         | sort | uniq -d
+)
+if [ -n "$partial" ]; then
+    echo "" >&2
+    echo "ステージした内容と作業ツリーが食い違うためコミットを中止しました。" >&2
+    printf '%s
+' "$partial" | sed 's/^/  - /' >&2
+    echo "" >&2
+    echo "このままだと、テストした内容とコミットされる内容が別物になります。" >&2
+    echo "どちらかで進めてください:" >&2
+    echo "  まるごと入れる: git add <ファイル>" >&2
+    echo "  分けて入れる  : git stash push --keep-index (作業ツリーをステージ内容に揃える)" >&2
+    exit 1
+fi
+
+# ファイルの追加・削除・改名を含むコミットでは、コードマップの更新を必須にする。
+# (02-map.md/AGENTS.mdの追従はルールだけでは忘れられうるため、ここで物理的に担保する)
+staged=$(git -C "$root" diff --cached --name-status)
+map_targets=$(printf '%s\n' "$staged" \
+    | awk '$1 ~ /^(A|D|R)/ {print $2; if ($3 != "") print $3}' \
+    | grep -E '^(text-processing-bridge/app/[^/]+\.py|tools/[^/]+\.py|\.kilo/plugin/[^/]+\.ts)$' \
+    | grep -vE '(^|/)test_')
+map_updated=$(printf '%s\n' "$staged" | grep -E '(\.kilo/rules/02-map\.md|AGENTS\.md)$')
+if [ -n "$map_targets" ] && [ -z "$map_updated" ]; then
+    # 以前はここで中止していたが、並行作業のたびにコミットが止まり、
+    # 本題と関係ないファイルの追加でも進めなくなった(2026-08-18)。
+    # マップを腐らせない狙いは残したいので、知らせるだけにして通す。
+    echo "" >&2
+    echo "警告: コードマップが未更新です(コミットは続けます)。" >&2
+    echo "このコミットは次のファイルを追加/削除しています:" >&2
+    printf '%s\n' "$map_targets" | sed 's/^/  - /' >&2
+    echo ".kilo/rules/02-map.md と AGENTS.md の表を追従させてください。" >&2
+fi
+
+if [ ! -x "$python" ]; then
+    echo "警告: .venv が見つからないためテストをスキップしてコミットします。" >&2
+    echo "再構築: 01-workflow.md のルール1を参照。" >&2
+    exit 0
+fi
+
+cd "$bridge" || exit 1
+"$python" -m pytest -q --no-header -p no:cacheprovider
+status=$?
+if [ $status -ne 0 ]; then
+    echo "" >&2
+    echo "pytestが失敗したためコミットを中止しました。" >&2
+    echo "テストを直してから再度コミットしてください。" >&2
+    exit $status
+fi
+
+# tools/(Open WebUIのPipe/Tool・Office操作スクリプト)はテストが薄いため、
+# 構文チェックを掛ける。LLM編集による構文壊れをここで止める。
+"$python" -m py_compile "$root"/tools/*.py
+status=$?
+if [ $status -ne 0 ]; then
+    echo "" >&2
+    echo "tools/ に構文エラーがあるためコミットを中止しました。" >&2
+    exit $status
+fi
+
+# pipeのルーティング(依頼文→処理・形式の判定)の振る舞いテスト。
+# tools/ はDockerイメージに入らないため、ホストvenvでのみ実行する。
+"$python" -m pytest "$root/tools" -q --no-header -p no:cacheprovider
+status=$?
+if [ $status -ne 0 ]; then
+    echo "" >&2
+    echo "pipeのルーティングテストが失敗したためコミットを中止しました。" >&2
+    exit $status
+fi
+exit 0

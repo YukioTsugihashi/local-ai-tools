@@ -1,0 +1,29 @@
+# 機密。エージェントに読ませない(ルールのお願いではなく物理ブロック)
+data/
+**/data/
+.env
+# 実物の議事録・名簿・実データのダンプ置き場(コードは置かない)
+templates/
+**/templates/
+
+# Office文書は外部パスを@指定した場合も扱うため、拡張子ではブロックしない。
+# 元ファイルは変更せず、外部ファイルは work/imports/ のコピーを加工する。
+
+# バイナリ・生成物。読んでもコンテキストの無駄
+.venv/
+**/.venv/
+wheelhouse/
+**/wheelhouse/
+wheelhouse-win/
+**/wheelhouse-win/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+**/.pytest_cache/
+
+# Office binaries are inspected through tools, never injected into LLM context.
+*.xlsx
+*.xlsm
+*.xls
+*.docx
+*.pptx

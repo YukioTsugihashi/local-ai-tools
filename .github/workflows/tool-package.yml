@@ -1,0 +1,44 @@
+name: 追加ツールの検査
+
+# オンラインAIが作った追加ツールを、院内へ持ち込む前に機械的に検査する。
+# ここは「早く間違いを返す」ための場であって、最終的な合否は院内側が決める
+# (持ち込まれたパッケージは院内インストーラが必ず再検査する)。
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  検査:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 取得
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 変更範囲の比較に履歴が要る
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 変更範囲の検査(追加ツール以外を触っていないか)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          python tools/toolpack_ci.py scope --base origin/${{ github.base_ref }}
+
+      - name: パッケージの検証(院内と同じ検査器)
+        run: python tools/toolpack_ci.py verify
+
+      - name: 検査器そのもののテスト
+        # 検査器が壊れて「全部通す」状態になっていないことを確かめる。
+        # 意図的に壊したパッケージが落ちることまで見る
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest tools/test_toolpack_verify.py -q

@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "transcript_health_check",
+  "version": "1.1.0",
+  "display_name": "文字起こし健康診断",
+  "summary": "議事録にする前に、文字起こしの直すべき箇所を洗い出す(LLMを使わない)",
+  "inputs": {
+    "accepts": [".txt", ".text", ".md", ".markdown", ".csv", ".tsv", ".log", ".json", ".yaml", ".yml", ".ini", ".rst", ".vtt", ".srt", ".html", ".htm", ".xml", ".docx", ".pptx", ".xlsx", ".xlsm", ".xls"],
+    "min": 1,
+    "max": 1
+  },
+  "outputs": {
+    "produces": [],
+    "may_be_empty": true
+  },
+  "requires": {
+    "core_api": ">=1,<2",
+    "packages": [
+      "python-docx==1.2.0"
+    ],
+    "models": []
+  },
+  "permissions": {
+    "ollama": false
+  },
+  "timeout_seconds": 120,
+  "routing": {
+    "label": "文字起こし健康診断",
+    "patterns": ["健康診断|診断して|チェックして|問題(が|は)?ない|確認して"],
+    "examples": [
+      "この文字起こしを診断して",
+      "議事録にする前にチェックして"
+    ],
+    "suggestions": [
+      {
+        "title": "文字起こし健康診断",
+        "subtitle": "議事録にする前の問題点を洗い出す",
+        "content": "この文字起こしを診断して"
+      }
+    ]
+  },
+  "smoke": {
+    "make_sample": "samples/make_sample.py",
+    "request": "samples/smoke_request.json",
+    "expect": {
+      "status": "ok",
+      "files_min": 0
+    }
+  }
+}

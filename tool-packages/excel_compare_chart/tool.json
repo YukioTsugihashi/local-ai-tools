@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "id": "excel_compare_chart",
+  "version": "1.1.0",
+  "display_name": "Excel比較グラフ",
+  "summary": "Excelの2つの列を比べて棒グラフと記録用Excelを作る(計算はPython)",
+  "inputs": {
+    "accepts": [".xlsx", ".xlsm"],
+    "min": 1,
+    "max": 1
+  },
+  "outputs": {
+    "produces": [".png", ".xlsx"],
+    "may_be_empty": false
+  },
+  "requires": {
+    "core_api": ">=1,<2",
+    "packages": [
+      "openpyxl==3.1.5",
+      "matplotlib==3.11.1",
+      "matplotlib-fontja==1.1.0"
+    ],
+    "models": []
+  },
+  "permissions": {
+    "ollama": false
+  },
+  "timeout_seconds": 600,
+  "routing": {
+    "label": "Excel比較グラフ",
+    "patterns": ["比較|比べ|くらべ|グラフ|対比"],
+    "examples": [
+      "R7年度とR8年度の入院収入を比較して",
+      "『(1)入院関係の実績』のH列とI列を比較して"
+    ],
+    "suggestions": [
+      {
+        "title": "年度どうしを比べる",
+        "subtitle": "見出しの名前で指定する",
+        "content": "R7年度とR8年度の入院収入を比較して"
+      },
+      {
+        "title": "列を指定して比べる",
+        "subtitle": "表が複数あるときは表名も添える",
+        "content": "『(1)入院関係の実績』のH列とI列を比較して"
+      }
+    ]
+  },
+  "smoke": {
+    "make_sample": "samples/make_sample.py",
+    "request": "samples/smoke_request.json",
+    "expect": {
+      "status": "ok",
+      "files_min": 2,
+      "suffixes": [".png", ".xlsx"]
+    }
+  }
+}

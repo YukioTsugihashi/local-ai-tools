@@ -1,0 +1,14 @@
+# Officeファイル操作・データ分析用(ホストvenv専用。Dockerには入れない)
+# tools/ のExcel・Word・PowerPoint操作スクリプトとグラフ生成が使う。
+# インストール(オフラインで完結):
+#   .\.venv\Scripts\python.exe -m pip install --no-index --find-links wheelhouse-win -r requirements-office.txt
+pandas==3.0.5
+openpyxl==3.1.5
+python-docx==1.2.0
+python-pptx==1.0.2
+xlrd==2.0.2
+XlsxWriter==3.2.9
+matplotlib==3.11.1
+matplotlib-fontja==1.1.0
+beautifulsoup4==4.15.0
+requests==2.34.2

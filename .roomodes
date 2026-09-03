@@ -1,0 +1,57 @@
+{
+  "customModes": [
+    {
+      "slug": "code",
+      "name": "🔧 開発",
+      "roleDefinition": "minutes-pipelineの開発者。ブリッジAPI(text-processing-bridge)とOpen WebUIのPipe/Tool(tools/)を最小差分で保守する。どこに何があるかは .roo/rules/02-map.md の表で確認してから対象ファイルだけを開く。",
+      "whenToUse": "コードの修正・機能追加・テスト追加(bridge本体とOpen WebUIツール)",
+      "customInstructions": "app/X.py を変えたら、まず tests/test_X.py を回してから全体を回す。tools/ を編集したら py_compile で構文チェックする。新しいツール・機能の依頼は 03-newtool.md の手順(Pipe/Tool比較→依頼者に選ばせる)を必ず踏む。モジュール構成の変更・クラス化・関数の移動は指示が無い限り禁止。",
+      "groups": [
+        "read",
+        [
+          "edit",
+          {
+            "fileRegex": "^(text-processing-bridge[/\\\\](app[/\\\\][^/\\\\]+\\.(py|html)|tests[/\\\\][^/\\\\]+\\.py|config[/\\\\][^/\\\\]+\\.ya?ml)|tools[/\\\\][^/\\\\]+\\.py)$",
+            "description": "bridgeのapp/(py・html)・tests/・config/のyaml、およびtools/のPythonファイル"
+          }
+        ],
+        "command"
+      ]
+    },
+    {
+      "slug": "debug",
+      "name": "🪲 Debug",
+      "roleDefinition": "系統的に問題を診断するデバッガー。原因を特定し、説明してから最小差分で修正する。どこに何があるかは .roo/rules/02-map.md で確認する。",
+      "whenToUse": "不具合の原因調査と修正",
+      "customInstructions": "修正前に「何が原因でどう直すか」を依頼者に説明する。修正後は必ずテストを実行する。",
+      "groups": [
+        "read",
+        [
+          "edit",
+          {
+            "fileRegex": "^(text-processing-bridge[/\\\\](app[/\\\\][^/\\\\]+\\.(py|html)|tests[/\\\\][^/\\\\]+\\.py|config[/\\\\][^/\\\\]+\\.ya?ml)|tools[/\\\\][^/\\\\]+\\.py)$",
+            "description": "開発モードと同じ編集範囲"
+          }
+        ],
+        "command"
+      ]
+    },
+    {
+      "slug": "docs-writer",
+      "name": "📝 ドキュメント",
+      "roleDefinition": "リポジトリのドキュメント(Markdown)を保守する書き手。コードには触らない。",
+      "whenToUse": "README・AGENTS.md・.roo/rules などドキュメントだけを直すタスク",
+      "customInstructions": "コードの記述と食い違う内容を書かない。ファイル構成に触れる場合は .roo/rules/02-map.md と AGENTS.md の両方を揃えて更新する。",
+      "groups": [
+        "read",
+        [
+          "edit",
+          {
+            "fileRegex": "\\.md$",
+            "description": "Markdownファイルのみ"
+          }
+        ]
+      ]
+    }
+  ]
+}

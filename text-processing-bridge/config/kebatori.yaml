@@ -1,0 +1,22 @@
+# 語頭か、句読点・空白の直後に現れた語を削る。後ろは何でもよい。
+# そのため「あの」「その」「こう」「なんか」のような、指示語・副詞としても使う語は
+# ここへ入れてはいけない。「その資料」→「資料」、「あの件」→「件」と本文が壊れる。
+# 長音符つき(あのー/そのー)や、単独で意味を持たない語だけを並べること。
+profiles:
+  default:
+    filler_phrases:
+      - "えー"
+      - "えーと"
+      - "ええと"
+      - "えっと"
+      - "あのー"
+      - "そのー"
+      - "そのう"
+      - "うーん"
+      - "まあ"
+      - "なんというか"
+      - "ですね"
+    remove_adjacent_duplicate_sentences: true
+    normalize_whitespace: true
+    normalize_repeated_punctuation: true
+

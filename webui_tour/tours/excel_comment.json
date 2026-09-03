@@ -1,0 +1,38 @@
+{
+  "id": "excel-comment",
+  "title": "Excelにコメントを入れる",
+  "description": "分析表のExcelを渡して、コメント欄の文章を作らせて書き込むまでの案内。",
+  "models": ["Excel分析", "excel_analysis"],
+  "steps": [
+    {
+      "label": "モデル名(画面上部)",
+      "text": "まず画面上部のモデル名を押します。\nここで「Excel分析」に切り替えないと、ただの雑談として返ってきます。",
+      "anchors": ["#model-selector-0-button", "[id^=\"model-selector-\"][id$=\"-button\"]"]
+    },
+    {
+      "label": "モデルの一覧",
+      "text": "一覧から「Excel分析」を選びます。\n検索欄に「excel」と打つと早く見つかります。",
+      "anchors": ["#model-search-input", "#model-list"]
+    },
+    {
+      "label": "＋(添付)ボタン",
+      "text": "＋ を押して、コメントを入れたいExcelファイルを添付します。\n.xlsx でも .xlsm でも構いません。元のファイルは書き換えません。",
+      "anchors": ["#input-menu-button"]
+    },
+    {
+      "label": "入力欄",
+      "text": "「コメント入れて」と入力します。\nシートを絞りたいときは「4月分だけコメント入れて」のように書き添えます。",
+      "anchors": ["#chat-input-container", "#message-input-container"]
+    },
+    {
+      "label": "送信ボタン",
+      "text": "送信します。\n表を読んで文章を作るので、1〜2分ほどかかります。画面を閉じずに待ってください。",
+      "anchors": ["#send-message-button"]
+    },
+    {
+      "label": "返ってきたファイル",
+      "text": "ファイルが2つ返ります。\n・成果物 … コメントを書き込んだExcel\n・確認用レポート … 入れた文章の全文\n先に確認用レポートで文章を確かめてから、成果物を開いてください。",
+      "anchors": ["#messages-container", "#chat-container"]
+    }
+  ]
+}

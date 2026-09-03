@@ -1,0 +1,40 @@
+/* ------------------------------------------------------------------
+ * Open WebUI ローカル調整
+ *
+ * 提案(Suggested)の定型ボタンを全件表示する。
+ * 既定では外枠が h-40 (160px) 固定、内側が max-h-40 + scrollbar-none のため、
+ * 1件あたり約52pxで3件しか見えず、スクロールバーも隠されている。
+ * 提案リストだけを狙って高さ制限を外す。
+ * ------------------------------------------------------------------ */
+
+/* 外枠の固定高さを解除する。
+ * h-40 w-full はビルド全体でこの提案欄にしか出てこないため直接指定でよい。
+ * :has() を使える環境ではより厳密に絞り込む。 */
+div.h-40.w-full {
+	height: auto !important;
+}
+
+div.h-40.w-full:has(> div[role='list']) {
+	height: auto !important;
+	min-height: 10rem;
+}
+
+/* 内側リストの高さ上限を広げる。画面が低いときだけスクロールさせる */
+div[role='list'].max-h-40 {
+	max-height: min(60vh, 32rem) !important;
+}
+
+/* それでも溢れる場合に備えて、隠されているスクロールバーを戻す */
+div[role='list'].max-h-40.scrollbar-none {
+	scrollbar-width: thin !important;
+}
+
+div[role='list'].max-h-40.scrollbar-none::-webkit-scrollbar {
+	display: block !important;
+	width: 6px;
+}
+
+div[role='list'].max-h-40.scrollbar-none::-webkit-scrollbar-thumb {
+	background-color: rgba(128, 128, 128, 0.4);
+	border-radius: 3px;
+}

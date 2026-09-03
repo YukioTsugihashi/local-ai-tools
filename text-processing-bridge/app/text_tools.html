@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dify文章処理</title>
+  <style>
+    :root{font-family:system-ui,sans-serif;color:#172033;background:#f4f6fa}
+    *{box-sizing:border-box}body{margin:0}.shell{max-width:1050px;margin:auto;padding:28px 18px 80px}
+    header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
+    h1{font-size:24px;margin:0}.sub{color:#667085;margin:4px 0 0}.card{background:#fff;border:1px solid #e3e7ef;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 4px 18px #1822300b}
+    textarea{width:100%;min-height:210px;border:1px solid #ccd3df;border-radius:10px;padding:12px;font:inherit;resize:vertical}
+    input[type=file]{width:100%;padding:10px;border:1px dashed #98a2b3;border-radius:10px}
+    .tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+    .task{border:1px solid #d8deea;border-radius:10px;padding:12px;display:flex;gap:9px;align-items:flex-start}
+    .task strong{display:block}.task small{color:#667085}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    button,a.button{border:0;border-radius:9px;padding:10px 16px;font-weight:700;cursor:pointer;text-decoration:none}
+    .primary{background:#2563eb;color:#fff}.secondary{background:#eef2f8;color:#27364d}button:disabled{opacity:.55;cursor:wait}
+    .result pre{white-space:pre-wrap;word-break:break-word;background:#f8fafc;border-radius:9px;padding:14px;line-height:1.7}
+    .result textarea{min-height:80px}.meta{font-size:12px;color:#667085}.error{color:#b42318}.status{min-height:24px;color:#475467}
+    @media(max-width:640px){header{align-items:flex-start;flex-direction:column}.shell{padding-top:18px}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header>
+    <div><h1>Dify文章処理</h1><p class="sub">ファイルまたは本文を入れ、必要な処理を選択してください。</p></div>
+    <a class="button secondary" href="http://localhost" target="_blank" rel="noopener">Dify管理画面 ↗</a>
+  </header>
+
+  <section class="card">
+    <label><strong>ファイル</strong>（txt / md / csv / json / log）</label>
+    <input id="file" type="file" accept=".txt,.md,.csv,.json,.log,text/plain">
+    <p class="meta">ファイル内容はこの端末内だけで処理されます。必要なら下の本文を直接編集できます。</p>
+    <textarea id="text" placeholder="ここへ文章を貼り付けても使えます。"></textarea>
+  </section>
+
+  <section class="card">
+    <strong>実行する処理</strong>
+    <div class="tasks">
+      <label class="task"><input type="checkbox" value="kebatori"><span><strong>ケバ取り</strong><small>設定済みのフィラー・重複だけを除去</small></span></label>
+      <label class="task"><input type="checkbox" value="summarize"><span><strong>要約</strong><small>原文の事実を保って短縮</small></span></label>
+      <label class="task"><input type="checkbox" value="rewrite"><span><strong>文章整形</strong><small>内容を変えず読みやすく整形</small></span></label>
+      <label class="task"><input type="checkbox" value="minutes"><span><strong>議事録</strong><small>概要・決定事項・対応事項へ整理</small></span></label>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <label>最大文字数 <input id="maxChars" type="number" value="800" min="1" max="100000" style="width:110px;padding:8px"></label>
+      <button id="run" class="primary">選択した処理を実行</button>
+    </div>
+    <div id="status" class="status"></div>
+  </section>
+
+  <section id="results"></section>
+</main>
+<script>
+const labels={kebatori:"ケバ取り",summarize:"要約",rewrite:"文章整形",minutes:"議事録"};
+const file=document.querySelector("#file"),text=document.querySelector("#text"),run=document.querySelector("#run");
+const status=document.querySelector("#status"),results=document.querySelector("#results");
+file.addEventListener("change",async()=>{const f=file.files[0];if(!f)return;try{text.value=await f.text();status.textContent=`${f.name} を読み込みました（${text.value.length}文字）`;}catch(e){status.innerHTML='<span class="error">ファイルを読み込めませんでした。</span>';}});
+const escapeHtml=s=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function call(operation,body){const r=await fetch(`/v1/text/${operation}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok)throw new Error((await r.text())||`HTTP ${r.status}`);return r.json();}
+function resultCard(data){
+  const id=`r-${crypto.randomUUID()}`;
+  const el=document.createElement("article");el.className="card result";
+  el.innerHTML=`<h2>${escapeHtml(labels[data.operation]||"修正結果")}</h2><pre>${escapeHtml(data.text)}</pre>
+  <p class="meta">${data.source_chars}文字 → ${data.result_chars}文字 / workflow: ${escapeHtml(data.workflow_run_id)}</p>
+  <label><strong>この結果への修正指示</strong></label><textarea placeholder="例：箇条書きではなく文章にしてください。"></textarea>
+  <div class="row"><button class="secondary refine">指示を反映</button><button class="secondary copy">結果をコピー</button></div><div class="status"></div>`;
+  el.querySelector(".copy").onclick=()=>navigator.clipboard.writeText(data.text);
+  el.querySelector(".refine").onclick=async e=>{const instruction=el.querySelector("textarea").value.trim(),s=el.querySelector(".status");if(!instruction){s.textContent="修正指示を入力してください。";return;}e.target.disabled=true;s.textContent="Difyで修正中…";try{const next=await call("refine",{text:data.text,instruction});resultCard(next);s.textContent="修正結果を下へ追加しました。";}catch(err){s.innerHTML=`<span class="error">${escapeHtml(String(err))}</span>`;}finally{e.target.disabled=false;}};
+  results.appendChild(el);el.scrollIntoView({behavior:"smooth",block:"start"});
+}
+run.onclick=async()=>{const source=text.value.trim(),ops=[...document.querySelectorAll('.task input:checked')].map(x=>x.value);if(!source){status.textContent="文章またはファイルを入力してください。";return;}if(!ops.length){status.textContent="処理を1つ以上選択してください。";return;}run.disabled=true;results.innerHTML="";let done=0;for(const op of ops){status.textContent=`${labels[op]}を実行中…（${done+1}/${ops.length}）`;try{const body={text:source};if(op==="summarize"||op==="minutes")body.max_chars=Number(document.querySelector("#maxChars").value);if(op==="kebatori")body.profile="default";resultCard(await call(op,body));done++;}catch(err){const p=document.createElement("p");p.className="card error";p.textContent=`${labels[op]}: ${err}`;results.appendChild(p);}}status.textContent=`完了しました（${done}/${ops.length}）`;run.disabled=false;};
+
+// バージョン表示
+window.addEventListener("load", async () => {
+  try {
+    const response = await fetch("/version");
+    if (response.ok) {
+      const data = await response.json();
+      const footer = document.createElement("footer");
+      footer.style.cssText = "text-align:center;margin-top:20px;font-size:12px;color:#667085;";
+      footer.textContent = `v${data.version}`;
+      document.body.appendChild(footer);
+    }
+  } catch (error) {
+    console.error("バージョン取得に失敗しました:", error);
+  }
+});
+</script>
+</body>
+</html>

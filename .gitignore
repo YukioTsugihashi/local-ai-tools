@@ -1,0 +1,47 @@
+# 機密・実会議データ(絶対にコミットしない)
+data/
+# 実物の議事録テンプレート・添削済み原稿が入る(拡張子除外では README 等が漏れる)
+templates/
+*.docx
+*.doc
+*.xlsx
+*.xlsm
+*.xls
+*.pptx
+*.ppt
+# Officeファイルの作業フォルダ(実データが入るため中身は除外、フォルダ自体は残す)
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
+# bridge配下の出力フォルダ(Kiloの分析出力置き場。ルートのoutput/*では届かない)
+text-processing-bridge/output/
+# 運用ログ・サービス起動ログ(PIIレスだが履歴に残す価値はない)
+text-processing-bridge/logs/
+logs/
+# tools/内から実行した場合の出力の迷子防止(本来はルートのoutput/へ集まる)
+tools/output/
+
+# Kiloが依頼ごとに生成する一時スクリプト(成果物ではない)
+work/*
+!work/.gitkeep
+
+# 追加ツールの実行時領域(パッケージ・registry・診断ログ。TOOL_PACKAGE_DECISIONS.md D-3)
+# コード・テンプレートはGit管理側(tools/等)に置き、ここへは置かない
+additional-tools/
+
+# シークレット
+.env
+
+# オフラインドキュメント置き場へのジャンクション(実体は D:\offline-kit\docs)
+offline-docs/
+
+# アンダースコア始まり = 使い捨て作業ファイル(旧パッチスクリプト・APIダンプ等)
+_*
+**/_*
+
+# Python
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/

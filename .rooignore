@@ -1,0 +1,26 @@
+# 機密。Rooに読ませない(ルールのお願いではなく物理ブロック)
+data/
+.env
+# 実物の議事録・名簿・実データのダンプ置き場(コードは置かない)
+templates/
+
+# Office文書はリポジトリ内では原則ブロック。
+# ただし作業フォルダは例外で、中身はすべて読み書きしてよい。
+# 運用ルール: 処理してほしいファイルは依頼者が input/ へ置き、
+# ツールの結果は output/ へ書き出す。
+*.docx
+*.doc
+*.xlsx
+*.xlsm
+*.xls
+*.pptx
+*.ppt
+!input/**
+!output/**
+
+# バイナリ・生成物。読んでもコンテキストの無駄
+.venv/
+wheelhouse/
+wheelhouse-win/
+__pycache__/
+.pytest_cache/

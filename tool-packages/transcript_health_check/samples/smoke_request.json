@@ -1,0 +1,7 @@
+{
+  "contract": 1,
+  "instruction": "この文字起こしを診断して",
+  "inputs": [],
+  "outdir": "out",
+  "config": {}
+}

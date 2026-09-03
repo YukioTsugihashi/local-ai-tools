@@ -1,0 +1,7 @@
+{
+  "contract": 1,
+  "instruction": "行数を数えて",
+  "inputs": [],
+  "outdir": "out",
+  "config": {}
+}

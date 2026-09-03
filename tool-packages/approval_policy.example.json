@@ -1,0 +1,9 @@
+{
+  "_説明": "承認の決まり。additional-tools/registry/approval_policy.json へ置くと効きます。無ければ 2人/2人・自由入力で動きます。",
+  "_approvals_required": "承認済みにするのに要る人数(1以上)。0や負の数を書くと既定の2人へ戻します",
+  "approvals_required": 2,
+  "_revocations_required": "承認を取り消すのに要る人数(1以上)",
+  "revocations_required": 2,
+  "_approvers": "承認できる人。空の配列にすると自由入力になりますが、打ち間違いで別人として数えられます",
+  "approvers": []
+}

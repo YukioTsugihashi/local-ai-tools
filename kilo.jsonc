@@ -1,0 +1,306 @@
+{
+  // minutes-pipeline の Kilo Code 設定(Rooから移行。元設定は D:\offline-kit\roo\backup-2026-08-07)
+  // 柵の方針: モデルのコンテキストを消費しない場所(このファイル・.kilocodeignore・.kilo/agents)に置く
+  "$schema": "https://app.kilo.ai/config.json",
+
+  // 完全ローカル運用: クラウド共有・自動更新は止める
+  "share": "disabled",
+  "autoupdate": false,
+
+  // 推論はローカルOllamaのみ(オフライン前提)
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": {
+        "baseURL": "http://localhost:11434/v1",
+        "apiKey": "ollama"
+      },
+      "models": {
+        "qwen3.6-64k:latest": {
+          "name": "qwen3.6-27b (64K)",
+          "reasoning": true,
+          "tool_call": true,
+          "limit": { "context": 65536, "output": 8192 }
+        },
+        "gemma4:26b": {
+          "name": "gemma4:26b (日本語会話)",
+          "limit": { "context": 65536, "output": 8192 }
+        },
+        "qwen3.6-128k:latest": {
+          "name": "qwen3.6-128k (予備・切り戻し用)",
+          "limit": { "context": 131072, "output": 8192 }
+        },
+        "qwen3.8-128k:latest": {
+          "name": "qwen3.8-128k (実装・計画)",
+          "reasoning": true,
+          "tool_call": true,
+          "limit": { "context": 131072, "output": 8192 }
+        },
+        "gpt-oss-64k:latest": {
+          "name": "gpt-oss-64k",
+          "limit": { "context": 65536, "output": 8192 }
+        },
+        "qwen3-vl-64k:latest": {
+          "name": "qwen3-vl-64k (画像対応)",
+          "attachment": true,
+          "tool_call": true,
+          "modalities": { "input": ["text", "image"], "output": ["text"] },
+          "limit": { "context": 65536, "output": 8192 }
+        }
+      }
+    }
+  },
+
+  // 役割分担: ask=gemma4(日本語会話)、plan/code/debug=qwen3.8(thinking)、qwen3.6/gpt-oss=予備
+  // 2026-08-14: plan=gpt-oss・code/debug=qwen3-coder → qwen3.6-128k(根拠=MODEL_SELECTION_CODING_2026-08.md)
+  // 2026-08-17: qwen3.6-128k → qwen3.8-128k(利用者判断。切り戻し先のqwen3.6-128kは登録を残す)
+  "model": "ollama/qwen3.8-128k:latest",
+  "small_model": "ollama/qwen3.8-128k:latest",
+  "default_agent": "code",
+  "agent": {
+    "plan": {
+      "model": "ollama/qwen3.8-128k:latest",
+      "permission": {
+        "edit": {
+          "*": "deny",
+          "*.md": "ask"
+        },
+        "bash": {
+          "*": "deny",
+          "dir input": "allow",
+          "dir input/*": "allow",
+          "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\safe_file_import.py *": "allow",
+          ".\\text-processing-bridge\\.venv\\Scripts\\python.exe tools\\safe_file_import.py *": "allow",
+          "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\excel_reader.py * --no-csv": "allow",
+          ".\\text-processing-bridge\\.venv\\Scripts\\python.exe tools\\excel_reader.py * --no-csv": "allow",
+          "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\excel_reader.py --no-csv *": "allow",
+          ".\\text-processing-bridge\\.venv\\Scripts\\python.exe tools\\excel_reader.py --no-csv *": "allow",
+          "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_excel.py list *": "allow",
+          "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_excel.py show *": "allow",
+          "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_word.py show *": "allow",
+          "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_ppt.py show *": "allow",
+          "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\doctor.py": "allow",
+          "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\doctor.py *": "allow",
+          "python tools\\doctor.py": "allow",
+          "python tools\\doctor.py *": "allow",
+          "python.exe tools\\doctor.py": "allow",
+          "python.exe tools\\doctor.py *": "allow",
+          "python doctor.py": "allow",
+          "python doctor.py *": "allow",
+          "python.exe doctor.py": "allow",
+          "python.exe doctor.py *": "allow"
+        }
+      }
+    },
+    "ask": {
+      "model": "ollama/gemma4:26b",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny"
+      }
+    }
+  },
+
+  "permission": {
+    // 機密の物理ブロック(.kilocodeignoreと二重の柵)
+    "read": {
+      "*": "allow",
+      "data/**": "deny",
+      "**/data/**": "deny",
+      ".env": "deny",
+      "**/.env": "deny",
+      ".env.*": "deny",
+      "**/.env.*": "deny",
+      "templates/**": "deny",
+      "**/templates/**": "deny",
+      ".venv/**": "deny",
+      "**/.venv/**": "deny"
+    },
+    // 全エージェント共通の編集フェンス。code/debug/docs-writerは各agentファイル側の定義が優先。
+    // フェンス内も ask = 差分承認の物理ゲート(plan-firstのプロンプト強制はローカルLLMに安定して効かないため)
+    "edit": {
+      "*": "ask",
+      "input/**": "deny",
+      "**/input/**": "deny",
+      "output/**": "allow",
+      "**/output/**": "allow",
+      "work/**": "allow",
+      "**/work/**": "allow",
+      "data/**": "deny",
+      "**/data/**": "deny",
+      "templates/**": "deny",
+      "**/templates/**": "deny",
+      ".venv/**": "deny",
+      "**/.venv/**": "deny",
+      "text-processing-bridge/app/*.py": "ask",
+      "text-processing-bridge/app/*.html": "ask",
+      "text-processing-bridge/tests/*.py": "ask",
+      "text-processing-bridge/config/*.yaml": "ask",
+      "text-processing-bridge/config/*.yml": "ask",
+      "tools/*.py": "ask",
+      "*.md": "ask",
+      "offline-docs/**": "deny",
+      "kilo.jsonc": "deny",
+      ".kilocodeignore": "deny",
+      ".kilo/**": "deny",
+      // コードマップだけは例外(生きたマップとしてKiloが更新する。askの差分承認は残る)
+      ".kilo/rules/02-map.md": "ask",
+      "tools/safe_task_runner.py": "deny",
+      "tools/safe_file_import.py": "deny",
+      // 管理APIキーを扱うデプロイ経路の本体。Kiloには実行だけ許し、編集は人が行う
+      "tools/open_webui_deploy.py": "deny"
+    },
+    // オフラインなのでWebアクセスは常に無効
+    "webfetch": "deny",
+    "websearch": "deny",
+    // 原則ask。オフラインドキュメント置き場(offline-docs/ジャンクションの実体)だけは読み取り自由
+    "external_directory": {
+      "*": "ask",
+      "D:/offline-kit/docs/**": "allow"
+    },
+    // コマンド: 既定は確認(ask)。定型作業だけ自動許可、破壊系は末尾のdenyが最優先(後勝ち)
+    "bash": {
+      "*": "ask",
+      "cd": "allow",
+      "cd *": "allow",
+      "dir": "allow",
+      "dir *": "ask",
+      "findstr *": "deny",
+      "systeminfo": "allow",
+      "python -m pytest": "allow",
+      "python -m pytest *": "allow",
+      "python -m py_compile *": "allow",
+      ".venv\\Scripts\\python.exe -m pytest": "allow",
+      ".venv\\Scripts\\python.exe -m pytest *": "allow",
+      ".venv\\Scripts\\python.exe -m py_compile *": "allow",
+      ".\\.venv\\Scripts\\python.exe -m pytest": "allow",
+      ".\\.venv\\Scripts\\python.exe -m pytest *": "allow",
+      ".\\.venv\\Scripts\\python.exe -m py_compile *": "allow",
+      "./.venv/Scripts/python.exe -m pytest": "allow",
+      "./.venv/Scripts/python.exe -m pytest *": "allow",
+      "./.venv/Scripts/python.exe -m py_compile *": "allow",
+      "cd text-processing-bridge; .\\.venv\\Scripts\\python.exe -m pytest -q": "allow",
+      "cd text-processing-bridge; .\\.venv\\Scripts\\python.exe -m pytest *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe -m pytest *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe -m py_compile *": "allow",
+      "text-processing-bridge/.venv/Scripts/python.exe -m py_compile *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\safe_task_runner.py work\\*": "allow",
+      ".\\text-processing-bridge\\.venv\\Scripts\\python.exe tools\\safe_task_runner.py work\\*": "allow",
+      "text-processing-bridge/.venv/Scripts/python.exe tools/safe_task_runner.py work/*": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\safe_file_import.py *": "allow",
+      ".\\text-processing-bridge\\.venv\\Scripts\\python.exe tools\\safe_file_import.py *": "allow",
+      "text-processing-bridge/.venv/Scripts/python.exe tools/safe_file_import.py *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\excel_reader.py *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_excel.py list *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_excel.py show *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_excel.py set *": "allow",
+      ".\\text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_excel.py set *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_word.py show *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\office_ppt.py show *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\doctor.py": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\doctor.py *": "allow",
+      ".\\text-processing-bridge\\.venv\\Scripts\\python.exe tools\\doctor.py": "allow",
+      ".\\text-processing-bridge\\.venv\\Scripts\\python.exe tools\\doctor.py *": "allow",
+      // doctorは素のpythonでもvenvへ自動で実行し直す(読み取り専用)ため、この形も許可
+      "python tools\\doctor.py": "allow",
+      "python tools\\doctor.py *": "allow",
+      "python.exe tools\\doctor.py": "allow",
+      "python.exe tools\\doctor.py *": "allow",
+      "python doctor.py": "allow",
+      "python doctor.py *": "allow",
+      "python.exe doctor.py": "allow",
+      "python.exe doctor.py *": "allow",
+      // Open WebUIへのPipe/Tool登録・更新(標準ライブラリのみ。素のpythonで動く)。
+      // 接続先localhost固定・対象tools/のopen*webui*.py限定・登録前検査は
+      // スクリプト側の柵(tools/open_webui_deploy.py。Kiloは編集不可)で担保する
+      "python tools\\open_webui_deploy.py": "allow",
+      "python tools\\open_webui_deploy.py *": "allow",
+      "python.exe tools\\open_webui_deploy.py": "allow",
+      "python.exe tools\\open_webui_deploy.py *": "allow",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe tools\\open_webui_deploy.py *": "allow",
+      ".\\text-processing-bridge\\.venv\\Scripts\\python.exe tools\\open_webui_deploy.py *": "allow",
+      "text-processing-bridge/.venv/Scripts/python.exe tools/open_webui_deploy.py *": "allow",
+      "python -c *": "deny",
+      ".venv\\Scripts\\python.exe -c *": "deny",
+      ".\\.venv\\Scripts\\python.exe -c *": "deny",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe -c *": "deny",
+      "text-processing-bridge\\.venv\\Scripts\\python.exe work\\*": "deny",
+      ".\\text-processing-bridge\\.venv\\Scripts\\python.exe work\\*": "deny",
+      "text-processing-bridge/.venv/Scripts/python.exe work/*": "deny",
+      "docker compose -f text-processing-bridge/docker-compose.yml build bridge": "allow",
+      "docker compose -f text-processing-bridge/docker-compose.yml run --rm bridge python -m pytest -q": "allow",
+      "git status": "allow",
+      "git status *": "allow",
+      "git diff": "allow",
+      "git diff *": "allow",
+      "git log": "allow",
+      "git log *": "allow",
+      "git show": "allow",
+      "git show *": "allow",
+      "git add *": "ask",
+      "git commit *": "ask",
+      // 戻すのは revert だけ(reset・checkoutは末尾でdeny)。
+      // 承認画面で実際の差分を見てから通すこと。
+      // 範囲で戻す(<タグ>..HEAD)形は影響が大きいので、人が内容を確かめてから承認する
+      "git revert": "ask",
+      "git revert *": "ask",
+      "rm": "deny",
+      "rm *": "deny",
+      "del": "deny",
+      "del *": "deny",
+      "rmdir": "deny",
+      "rmdir *": "deny",
+      "rd": "deny",
+      "rd *": "deny",
+      "Remove-Item *": "deny",
+      "Move-Item *": "deny",
+      // ブランチ構成と作業ツリーを動かす操作は人が行う。
+      // 切り替え後はローカルサービスの再起動が要るため(GIT_BRANCH_WORKFLOW.md)
+      "git switch": "deny",
+      "git switch *": "deny",
+      "git merge": "deny",
+      "git merge *": "deny",
+      "git branch -d *": "deny",
+      "git branch -D *": "deny",
+      "git worktree *": "deny",
+      "git cherry-pick *": "deny",
+      "git stash *": "deny",
+      "git reset": "deny",
+      "git reset *": "deny",
+      "git checkout": "deny",
+      "git checkout *": "deny",
+      "git restore": "deny",
+      "git restore *": "deny",
+      "git clean": "deny",
+      "git clean *": "deny",
+      "git push": "deny",
+      "git push *": "deny",
+      "git rebase": "deny",
+      "git rebase *": "deny",
+      "docker compose down": "deny",
+      "docker compose down *": "deny",
+      "docker system prune": "deny",
+      "docker system prune *": "deny",
+      "docker volume *": "deny",
+      "docker rm *": "deny",
+      "docker rmi *": "deny",
+      "format *": "deny",
+      "shutdown": "deny",
+      "shutdown *": "deny",
+      "Stop-Computer": "deny",
+      "Stop-Computer *": "deny",
+      "Restart-Computer": "deny",
+      "Restart-Computer *": "deny",
+      "Stop-Process *": "deny",
+
+      // ここからは上のdenyへの例外(後勝ち)。
+      // 作業ツリーの中身を動かさないコマンドだけをKiloへ戻している。
+      // -c は新しい枝を作ってHEADを移すだけで、ファイルは入れ替わらない
+      "git switch -c *": "ask",
+      // バックアップ先(D:/offline-kit 下のbare)へ送るだけ。--force 等は含まない
+      "git push local": "ask",
+      "git push local --tags": "ask"
+    }
+  }
+}
