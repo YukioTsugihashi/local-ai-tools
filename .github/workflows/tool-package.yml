@@ -14,7 +14,11 @@ permissions:
   contents: read
 
 jobs:
-  検査:
+  # **ジョブIDは英数字でなければならない。**
+  # 日本語にすると GitHub がワークフローを読めず、ジョブが1つも動かないまま
+  # 失敗する(2026-09-04 に実際そうなった)。見せる名前は name: で日本語にできる
+  verify:
+    name: 追加ツールの検査
     runs-on: ubuntu-latest
     steps:
       - name: 取得
