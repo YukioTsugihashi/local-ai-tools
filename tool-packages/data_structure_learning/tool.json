@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "data_structure_learning",
+  "version": "1.0.0",
+  "display_name": "データ構造学習",
+  "summary": "Excel全行の列数・有効行数を集計し、型と重複関係を保持するダミーデータをExcelとCSVで出力する",
+  "inputs": {"accepts": [".xlsx", ".xlsm"], "min": 1, "max": 1},
+  "outputs": {"produces": [".xlsx", ".zip"], "may_be_empty": false},
+  "requires": {"core_api": ">=1,<2", "packages": ["openpyxl==3.1.5"], "models": []},
+  "permissions": {"ollama": false},
+  "timeout_seconds": 1500,
+  "routing": {
+    "label": "データ構造学習",
+    "patterns": ["データ構造|データ概要|ダミー|列数|カラム|有効.*行|CSV|csv"],
+    "examples": ["このExcelのデータ構造を調べて、ダミーデータをExcelとCSVで作成して", "各カラムの有効データ行数を数えて"],
+    "suggestions": [{"title": "データ構造とダミーデータ", "subtitle": "Excel全行を確認しExcel・CSVで出力", "content": "このExcelのデータ構造を調べて、ダミーデータをExcelとCSVで作成して"}]
+  },
+  "smoke": {
+    "make_sample": "samples/make_sample.py",
+    "request": "samples/smoke_request.json",
+    "expect": {"status": "ok", "files_min": 4, "suffixes": [".xlsx", ".zip"]}
+  }
+}
